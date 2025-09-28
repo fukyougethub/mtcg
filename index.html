@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Team Generator</title>
+  <title>Comp Generator</title>
   <style>
     body{font-family:system-ui,Segoe UI,Roboto,Arial;background:#f7f7fb;color:#111;margin:0;padding:20px}
     .container{max-width:1000px;margin:0 auto;background:#fff;border-radius:12px;padding:18px;box-shadow:0 6px 30px rgba(18,24,40,0.06)}
@@ -103,29 +103,29 @@
 
     const PIECES = {
       "KNIGHT":   {"type": "TANK", "group1": "NOBLE", "group2": "JUGGERNAUT", "bonus": 3},
-      "PRINCE":   {"type": "ASSASSIN", "group1": "NOBLE", "group2": "BRAWLER", "bonus": 4},
-      "PRINCESS": {"type": "ARTILLERY", "group1": "NOBLE", "group2": "RANGER", "bonus": 2},
-      "GOLDEN KNIGHT": {"type": "ASSASSIN", "group1": "NOBLE", "group2": "ASSASSIN", "bonus": 5},
-      "PEKKA": {"type": "DAMAGE DEALER", "group1": "AVENGER", "group2": "ACE", "bonus": 4},
-      "GOBLIN MACHINE": {"type": "CONTROLLER", "group1": "JUGGERNAUT", "group2": "GOBLIN", "bonus": 2},
-      "SKELETON KING": {"type": "DAMAGE DEALER", "group1": "JUGGERNAUT", "group2": "UNDEAD", "bonus": 3},
-      "ARCHER": {"type": "MARKSMEN", "group1": "CLAN", "group2": "RANGER", "bonus": 3},
-      "BARBARIAN": {"type": "CONTROLLER", "group1": "CLAN", "group2": "BRAWLER", "bonus": 2},
-      "VALKYRIE": {"type": "TANK", "group1": "CLAN", "group2": "JUGGERNAUT", "bonus": 4},
+      "PRINCE":   {"type": "ASSASSIN", "group1": "NOBLE", "group2": "BRAWLER", "bonus": 1},
+      "PRINCESS": {"type": "ARTILLERY", "group1": "NOBLE", "group2": "RANGER", "bonus": 4},
+      "GOLDEN KNIGHT": {"type": "ASSASSIN", "group1": "NOBLE", "group2": "ASSASSIN", "bonus": 3},
+      "PEKKA": {"type": "DAMAGE DEALER", "group1": "AVENGER", "group2": "ACE", "bonus": 3},
+      "GOBLIN MACHINE": {"type": "CONTROLLER", "group1": "JUGGERNAUT", "group2": "GOBLIN", "bonus": 3},
+      "SKELETON KING": {"type": "DAMAGE DEALER", "group1": "JUGGERNAUT", "group2": "UNDEAD", "bonus": 4},
+      "ARCHER": {"type": "MARKSMEN", "group1": "CLAN", "group2": "RANGER", "bonus": 2},
+      "BARBARIAN": {"type": "CONTROLLER", "group1": "CLAN", "group2": "BRAWLER", "bonus": 1},
+      "VALKYRIE": {"type": "TANK", "group1": "CLAN", "group2": "JUGGERNAUT", "bonus": 2},
       "ARCHER QUEEN": {"type": "MARKSMEN", "group1": "CLAN", "group2": "AVENGER", "bonus": 5},
       "DART GOBLIN": {"type": "MARKSMEN", "group1": "GOBLIN", "group2": "RANGER", "bonus": 2},
-      "GOBLINS": {"type": "ASSASSIN", "group1": "GOBLIN", "group2": "ASSASSIN", "bonus": 3},
-      "SPEAR GOBLINS": {"type": "DAMAGE DEALER", "group1": "GOBLIN", "group2": "BLASTER", "bonus": 2},
-      "ROYAL GHOST": {"type": "ASSASSIN", "group1": "ASSASSIN", "group2": "UNDEAD", "bonus": 4},
-      "WIZARD": {"type": "ARTILLERY", "group1": "FIRE", "group2": "MAGE", "bonus": 5},
+      "GOBLINS": {"type": "ASSASSIN", "group1": "GOBLIN", "group2": "ASSASSIN", "bonus": 2},
+      "SPEAR GOBLINS": {"type": "DAMAGE DEALER", "group1": "GOBLIN", "group2": "BLASTER", "bonus": 1},
+      "ROYAL GHOST": {"type": "ASSASSIN", "group1": "ASSASSIN", "group2": "UNDEAD", "bonus": 2},
+      "WIZARD": {"type": "ARTILLERY", "group1": "FIRE", "group2": "MAGE", "bonus": 3},
       "EXECUTIONER": {"type": "ARTILLERY", "group1": "BLASTER", "group2": "ACE", "bonus": 3},
-      "GIANT SKELETON": {"type": "DAMAGE DEALER", "group1": "BRAWLER", "group2": "UNDEAD", "bonus": 3},
-      "MEGA KNIGHT": {"type": "TANK", "group1": "BRAWLER", "group2": "ACE", "bonus": 4},
-      "BANDIT": {"type": "ASSASSIN", "group1": "ASSASSIN", "group2": "ACE", "bonus": 4},
-      "SKELETON DRAGONS": {"type": "CONTROLLER", "group1": "UNDEAD", "group2": "RANGER", "bonus": 2},
-      "ELECTRO GIANT": {"type": "TANK", "group1": "ELECTRIC", "group2": "AVENGER", "bonus": 5},
-      "MUSKETEER": {"type": "MARKSMEN", "group1": "NOBLE", "group2": "BLASTER", "bonus": 3},
-      "BABY DRAGON": {"type": "ARTILLERY", "group1": "FIRE", "group2": "BLASTER", "bonus": 3},
+      "GIANT SKELETON": {"type": "DAMAGE DEALER", "group1": "BRAWLER", "group2": "UNDEAD", "bonus": 2},
+      "MEGA KNIGHT": {"type": "TANK", "group1": "BRAWLER", "group2": "ACE", "bonus": 3},
+      "BANDIT": {"type": "ASSASSIN", "group1": "ASSASSIN", "group2": "ACE", "bonus": 5},
+      "SKELETON DRAGONS": {"type": "CONTROLLER", "group1": "UNDEAD", "group2": "RANGER", "bonus": 4},
+      "ELECTRO GIANT": {"type": "TANK", "group1": "ELECTRIC", "group2": "AVENGER", "bonus": 3},
+      "MUSKETEER": {"type": "MARKSMEN", "group1": "NOBLE", "group2": "BLASTER", "bonus": 4},
+      "BABY DRAGON": {"type": "ARTILLERY", "group1": "FIRE", "group2": "BLASTER", "bonus": 4},
       "ELECTRO WIZARD": {"type": "CONTROLLER", "group1": "MAGE", "group2": "ELECTRIC", "bonus": 4},
       "WITCH": {"type": "CONTROLLER", "group1": "UNDEAD", "group2": "AVENGER", "bonus": 5},
     };
