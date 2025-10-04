@@ -25,7 +25,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Pick 6 troops for the rating: (11.26 is the max points a team could be)</h1><div id="pieces" class="grid"></div>
+    <h1>Pick 6 troops for the rating: (10.29 is the max points a team could be)</h1><div id="pieces" class="grid"></div>
 
 <div class="controls">
   <button id="rateBtn">Rate my team</button>
@@ -41,7 +41,7 @@
     <div class="panel">
       <h3>Custom Team Options</h3>
       <label class="small">Minimum Score:</label>
-      <input id="minScore" type="number" step="0.1" value="10.0" /><label class="small" style="margin-top:8px">Required Troops (comma separated):</label>
+      <input id="minScore" type="number" step="0.1" value="9.0" /><label class="small" style="margin-top:8px">Required Troops (comma separated):</label>
   <input id="reqTroops" type="text" placeholder="e.g. PRINCE, WIZARD" />
 
   <label class="small" style="margin-top:8px">Required Groups (format: GROUP:count, comma separated):</label>
@@ -158,7 +158,7 @@
         } else if(members.length===5){
           if(active>=2) score += 1 * multiplier;
           if(active===4) score += 2 * multiplier;
-          if(active===5) score += 2.5 * multiplier;
+          if(active===5) score += 2 * multiplier;
         }
       }
 
@@ -224,7 +224,7 @@
     });
 
     // Generate a good team (search combos randomly within a score window)
-    function findRandomStrongGroup(minScore=10.0, maxScore=11.21, attempts=200000){
+    function findRandomStrongGroup(minScore=9.0, maxScore=10.29, attempts=200000){
       const combos = [];
       const keys = allIds;
       for(let i=0;i<attempts;i++){
@@ -243,7 +243,7 @@
     }
 
     document.getElementById('genBtn').addEventListener('click',()=>{
-      const res = findRandomStrongGroup(10.0,11.21,400000);
+      const res = findRandomStrongGroup(9.0,10.29,400000);
       if(!res || !res.pick){ alert('No team found (try again).'); return; }
       const details = res.pick.map(pid=>`${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus}`).join('\n');
       showResult(`Team score: ${res.score.toFixed(2)}`, details);
