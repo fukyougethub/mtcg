@@ -27,7 +27,7 @@
     <h1>Pick 6 troops for the rating: (11.11 is the max points a team could be)</h1>
     <div id="pieces" class="grid"></div>
 
-    <!-- NEW RULER SELECT -->
+    <!-- RULER SELECT (required, no 'no ruler' option) -->
     <div style="margin-top:10px;">
       <label for="ruler">Select Ruler:</label>
       <select id="ruler">
@@ -48,7 +48,7 @@
     <div id="out" class="output">Results will appear here.</div>
   </div>
 
-  <!-- existing modal below remains unchanged -->
+  <!-- custom modal -->
   <div id="modal" class="modal" style="display:none">
     <div class="panel">
       <h3>Custom Team Options</h3>
@@ -56,8 +56,10 @@
       <input id="minScore" type="number" step="0.1" value="10.0" />
       <label class="small" style="margin-top:8px">Required Troops (comma separated):</label>
       <input id="reqTroops" type="text" placeholder="e.g. PRINCE, WIZARD" />
+
       <label class="small" style="margin-top:8px">Required Groups (format: GROUP:count, comma separated):</label>
       <input id="reqGroups" type="text" placeholder="e.g. NOBLE:2, UNDEAD:1" />
+
       <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
         <button id="findCustom">Find Team</button>
         <button id="closeModal" class="secondary">Close</button>
@@ -92,9 +94,9 @@
       "FIRE": 3, "ELECTRIC": 2,
     };
 
-    function getBonusMultiplier(b){ if(b===1)return 0.95; if(b===2)return 0.98; if(b===3)return 1.0; if(b===4)return 1.03; if(b===5)return 1.05; return 1.0; }
+    function getBonusMultiplier(b){ if(b===1) return 0.95; if(b===2) return 0.98; if(b===3) return 1.0; if(b===4) return 1.03; if(b===5) return 1.05; return 1.0; }
 
-    // ---- PIECES WITH COST ----
+    // ---- PIECES WITH COST (as you provided) ----
     const PIECES = {
       "KNIGHT": {"type":"TANK","group1":"NOBLE","group2":"JUGGERNAUT","bonus":1,"cost":2},
       "PRINCE": {"type":"TANK","group1":"NOBLE","group2":"BRAWLER","bonus":3,"cost":3},
@@ -126,10 +128,15 @@
 
     function getGroupMultiplier(g){
       const rank = GROUP_RANKINGS[g] ?? 2;
-      if(rank===1)return 0.8; if(rank===2)return 0.9; if(rank===3)return 1.0; if(rank===4)return 1.125; if(rank===5)return 1.25;
+      if(rank===1) return 0.8;
+      if(rank===2) return 0.9;
+      if(rank===3) return 1.0;
+      if(rank===4) return 1.125;
+      if(rank===5) return 1.25;
       return 1.0;
     }
 
+    // scoreGroup now includes total cost and applies Ruler multipliers as requested
     function scoreGroup(chosenIds){
       const chosenSet = new Set(chosenIds);
       let score = 0;
@@ -137,46 +144,214 @@
       for(const [gname,members] of Object.entries(GROUPS)){
         const active = members.filter(m=>chosenSet.has(m)).length;
         const multiplier = getGroupMultiplier(gname);
-        if(members.length===3){ if(active===3)score+=2*multiplier; }
-        else if(members.length===4){ if(active>=2)score+=1*multiplier; if(active===4)score+=2*multiplier; }
-        else if(members.length===2){ if(active>=2)score+=1.5*multiplier; }
-        else if(members.length===5){ if(active>=2)score+=1*multiplier; if(active===4)score+=2*multiplier; }
+        if(members.length===3){
+          if(active===3) score += 2 * multiplier;
+        } else if(members.length===4){
+          if(active>=2) score += 1 * multiplier;
+          if(active===4) score += 2 * multiplier;
+        } else if(members.length===2){
+          if(active>=2) score += 1.5 * multiplier;
+        } else if(members.length===5){
+          if(active>=2) score += 1 * multiplier;
+          if(active===4) score += 2 * multiplier;
+        }
       }
 
-      const chosenTypes = new Set(chosenIds.map(p=>PIECES[p].type));
-      if(chosenTypes.size>1)score+=chosenTypes.size/2;
+      const chosenTypes = new Set(chosenIds.map(p => PIECES[p].type));
+      if(chosenTypes.size > 1) score += chosenTypes.size / 2;
 
-      let bonusMultiplier=1;
-      for(const pid of chosenIds){ bonusMultiplier*=getBonusMultiplier(PIECES[pid].bonus); }
-      let totalCost = chosenIds.reduce((s,p)=>s+PIECES[p].cost,0);
-      let finalScore = score * bonusMultiplier;
+      // apply piece bonus multipliers
+      let bonusMultiplier = 1;
+      for(const pid of chosenIds){
+        bonusMultiplier *= getBonusMultiplier(PIECES[pid].bonus);
+      }
 
-      // --- APPLY RULER MULTIPLIER ---
-      const ruler = document.getElementById("ruler").value;
-      if(ruler==="Royale King"){
-        finalScore *= 1.1;
-      } else if(ruler==="Spirit Empress"){
-        if(totalCost>20) finalScore *= 1.2;
-      } else if(ruler==="Goblin Queen"){
+      const totalCost = chosenIds.reduce((s,p)=>s + (PIECES[p].cost||0), 0);
+
+      let final = score * bonusMultiplier;
+
+      // --- RULER MULTIPLIERS (exactly as specified) ---
+      const ruler = document.getElementById('ruler').value;
+      if(ruler === "Royale King"){
+        final *= 1.1;
+      } else if(ruler === "Spirit Empress"){
+        if(totalCost > 20) final *= 1.2;
+      } else if(ruler === "Goblin Queen"){
         const hasGoblin = chosenSet.has("GOBLINS");
         const hasSpear = chosenSet.has("SPEAR GOBLINS");
         const hasDart = chosenSet.has("DART GOBLIN");
         const hasMachine = chosenSet.has("GOBLIN MACHINE");
-        const goblinSet = hasGoblin && hasSpear && hasDart && hasMachine;
-        if(goblinSet) finalScore *= 1.5;
-        else if(
+        // all goblins case
+        if(hasGoblin && hasSpear && hasDart && hasMachine){
+          final *= 1.5;
+        } else if(
           (hasGoblin && hasSpear) ||
           (hasDart && hasSpear) ||
           (hasDart && hasGoblin) ||
           (hasDart && hasSpear && hasGoblin)
-        ) finalScore *= 1.25;
+        ){
+          final *= 1.25;
+        }
       }
 
-      return finalScore;
+      return final;
     }
 
-    // everything else (UI wiring, generate, etc.) stays the same
-    // ...
+    // combinations helper (generator)
+    function* combinations(arr,k){
+      const n=arr.length;
+      const indices = Array.from({length:k},(_,i)=>i);
+      if(k>n) return;
+      while(true){
+        yield indices.map(i=>arr[i]);
+        let i=k-1;
+        while(i>=0 && indices[i]===i+n-k) i--;
+        if(i<0) return;
+        indices[i]++;
+        for(let j=i+1;j<k;j++) indices[j]=indices[j-1]+1;
+      }
+    }
+
+    function randomChoice(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+    // ---- UI wiring ----
+    const piecesDiv = document.getElementById('pieces');
+    const out = document.getElementById('out');
+    const totalCountEl = document.getElementById('totalCount');
+
+    const allIds = Object.keys(PIECES);
+    totalCountEl.textContent = allIds.length;
+
+    const selection = {};
+    allIds.forEach(pid=>{
+      const div = document.createElement('label');
+      const cb = document.createElement('input'); cb.type='checkbox';
+      cb.addEventListener('change',()=> selection[pid]=cb.checked ? 1 : 0);
+      selection[pid]=0;
+      const txt = document.createElement('span'); txt.textContent = pid;
+      div.appendChild(cb); div.appendChild(txt);
+      piecesDiv.appendChild(div);
+    });
+
+    function showResult(title,text){
+      out.textContent = title + "\n\n" + text;
+    }
+
+    // Rate my team
+    document.getElementById('rateBtn').addEventListener('click',()=>{
+      const chosen = Object.entries(selection).filter(([k,v])=>v===1).map(([k])=>k);
+      if(chosen.length!==6){ alert('You must pick exactly 6 troops.'); return; }
+      const score = scoreGroup(chosen);
+      const totalCost = chosen.reduce((s,p)=>s+PIECES[p].cost,0);
+      const details = chosen.map(pid=>`${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}`).join('\n');
+      const ruler = document.getElementById('ruler').value;
+      showResult(`Team score: ${score.toFixed(2)} (Ruler: ${ruler}, Total cost: ${totalCost})`, details);
+    });
+
+    // Generate a good team (search combos randomly within a score window)
+    function findRandomStrongGroup(minScore=10.0, maxScore=11.11, attempts=200000){
+      const combos = [];
+      const keys = allIds;
+      for(let i=0;i<attempts;i++){
+        // pick 6 random unique
+        const pick = [];
+        const pool = keys.slice();
+        for(let j=0;j<6;j++){
+          const idx = Math.floor(Math.random()*pool.length);
+          pick.push(pool.splice(idx,1)[0]);
+        }
+        const sc = scoreGroup(pick);
+        if(sc>=minScore && sc<=maxScore) combos.push({score:sc,pick});
+      }
+      if(combos.length===0) return [null,null];
+      return randomChoice(combos);
+    }
+
+    document.getElementById('genBtn').addEventListener('click',()=>{
+      const res = findRandomStrongGroup(10.0,11.11,400000);
+      if(!res || !res.pick){ alert('No team found (try again).'); return; }
+      const details = res.pick.map(pid=>`${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}`).join('\n');
+      const totalCost = res.pick.reduce((s,p)=>s+PIECES[p].cost,0);
+      const ruler = document.getElementById('ruler').value;
+      showResult(`Team score: ${res.score.toFixed(2)} (Ruler: ${ruler}, Total cost: ${totalCost})`, details);
+    });
+
+    // Custom Team Finder modal
+    const modal = document.getElementById('modal');
+    document.getElementById('customBtn').addEventListener('click',()=> modal.style.display='flex');
+    document.getElementById('closeModal').addEventListener('click',()=> modal.style.display='none');
+
+    document.getElementById('findCustom').addEventListener('click',()=>{
+      const minScore = parseFloat(document.getElementById('minScore').value) || 10.00;
+      const required_troops_raw = document.getElementById('reqTroops').value;
+      const required_troops = required_troops_raw.split(',').map(s=>s.trim()).filter(Boolean);
+      const groups_raw = document.getElementById('reqGroups').value;
+      const group_constraints = {};
+      groups_raw.split(',').map(p=>p.trim()).forEach(part=>{
+        if(!part) return;
+        const [g,c] = part.split(':').map(s=>s.trim());
+        if(g && c) group_constraints[g.toUpperCase()] = parseInt(c,10);
+      });
+
+      // search combos randomly with constraints
+      const attempts = 800000; // should find something without full enumeration in most cases
+      const keys = allIds;
+      for(let i=0;i<attempts;i++){
+        // make random pick
+        const pick = [];
+        const pool = keys.slice();
+        for(let j=0;j<6;j++){
+          const idx = Math.floor(Math.random()*pool.length);
+          pick.push(pool.splice(idx,1)[0]);
+        }
+
+        // check required troops
+        if(required_troops.some(rt => !pick.includes(rt))) continue;
+
+        // check group constraints
+        let valid = true;
+        for(const [g,c] of Object.entries(group_constraints)){
+          const members = GROUPS[g] || [];
+          const active = pick.filter(p=>members.includes(p)).length;
+          if(active < c){ valid = false; break; }
+        }
+        if(!valid) continue;
+
+        // score and compare
+        const sc = scoreGroup(pick);
+        if(sc >= minScore){
+          const totalCost = pick.reduce((s,p)=>s+PIECES[p].cost,0);
+          const details = pick.map(pid =>
+            `${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}`
+          ).join('\n');
+          const ruler = document.getElementById('ruler').value;
+          showResult(`Custom team score: ${sc.toFixed(2)} (Ruler: ${ruler}, Total cost: ${totalCost})`, details);
+          modal.style.display='none';
+          return;
+        }
+      }
+      alert("No team found with these constraints.");
+    });
+
+    // Find BEST possible team (full enumeration)
+    document.getElementById('bestBtn').addEventListener('click',()=>{
+      let bestScore = -Infinity;
+      let bestTeam = null;
+      for(const combo of combinations(allIds,6)){
+        const sc = scoreGroup(combo);
+        if(sc > bestScore){
+          bestScore = sc;
+          bestTeam = combo;
+        }
+      }
+      if(!bestTeam){ alert("No team found."); return; }
+      const details = bestTeam.map(pid =>
+        `${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}`
+      ).join('\n');
+      const totalCost = bestTeam.reduce((s,p)=>s+PIECES[p].cost,0);
+      const ruler = document.getElementById('ruler').value;
+      showResult(`Best possible team score: ${bestScore.toFixed(2)} (Ruler: ${ruler}, Total cost: ${totalCost})`, details);
+    });
   </script>
 </body>
 </html>
