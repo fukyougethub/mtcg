@@ -39,6 +39,15 @@
       </select>
     </div>
 
+    <!-- MODIFIER SELECT -->
+<div style="margin-top:10px;">
+  <label for="modifier">Select Modifier:</label>
+  <select id="modifier">
+    <option value="Default">Default</option>
+    <option value="Champion Star">Champion Star</option>
+  </select>
+</div>
+
     <div class="controls">
       <button id="rateBtn">Rate my team</button>
       <button id="genBtn">Generate a good team</button>
@@ -195,6 +204,13 @@
         final *= 1.05;
       }
 
+      // --- MODIFIER EFFECTS ---
+const modifier = document.getElementById('modifier')?.value || "Default";
+if(modifier === "Champion Star"){
+  const hasFiveCost = chosenIds.some(pid => (PIECES[pid].cost || 0) === 5);
+  if(hasFiveCost) final *= 1.05;
+}
+
       return final;
     }
 
@@ -248,7 +264,8 @@
       const score = scoreGroup(chosen);
       const totalCost = chosen.reduce((s,p)=>s+PIECES[p].cost,0);
       const details = chosen.map(pid=>`${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}`).join('\n');
-      showResult(`Team score: ${score.toFixed(2)} (Ruler: ${ruler}, Total cost: ${totalCost})`, details);
+const modifier = document.getElementById('modifier').value;
+showResult(`Team score: ${score.toFixed(2)} (Ruler: ${ruler}, Modifier: ${modifier}, Total cost: ${totalCost})`, details);
     });
 
     // everything else unchanged ↓
