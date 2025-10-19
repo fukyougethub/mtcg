@@ -34,6 +34,7 @@
         <option value="Royale King">Royale King</option>
         <option value="Spirit Empress">Spirit Empress</option>
         <option value="Goblin Queen">Goblin Queen</option>
+        <option value="Elixir Loong">Elixir Loong</option>
       </select>
     </div>
 
@@ -96,7 +97,6 @@
 
     function getBonusMultiplier(b){ if(b===1) return 0.95; if(b===2) return 0.98; if(b===3) return 1.0; if(b===4) return 1.03; if(b===5) return 1.05; return 1.0; }
 
-    // ---- PIECES WITH COST (as you provided) ----
     const PIECES = {
       "KNIGHT": {"type":"TANK","group1":"NOBLE","group2":"JUGGERNAUT","bonus":1,"cost":2},
       "PRINCE": {"type":"TANK","group1":"NOBLE","group2":"BRAWLER","bonus":3,"cost":3},
@@ -136,7 +136,6 @@
       return 1.0;
     }
 
-    // scoreGroup now includes total cost and applies Ruler multipliers as requested
     function scoreGroup(chosenIds){
       const chosenSet = new Set(chosenIds);
       let score = 0;
@@ -160,7 +159,6 @@
       const chosenTypes = new Set(chosenIds.map(p => PIECES[p].type));
       if(chosenTypes.size > 1) score += chosenTypes.size / 2;
 
-      // apply piece bonus multipliers
       let bonusMultiplier = 1;
       for(const pid of chosenIds){
         bonusMultiplier *= getBonusMultiplier(PIECES[pid].bonus);
@@ -170,7 +168,6 @@
 
       let final = score * bonusMultiplier;
 
-      // --- RULER MULTIPLIERS (exactly as specified) ---
       const ruler = document.getElementById('ruler').value;
       if(ruler === "Royale King"){
         final *= 1.1;
@@ -181,7 +178,6 @@
         const hasSpear = chosenSet.has("SPEAR GOBLINS");
         const hasDart = chosenSet.has("DART GOBLIN");
         const hasMachine = chosenSet.has("GOBLIN MACHINE");
-        // all goblins case
         if(hasGoblin && hasSpear && hasDart && hasMachine){
           final *= 1.5;
         } else if(
@@ -192,12 +188,13 @@
         ){
           final *= 1.25;
         }
+      } else if(ruler === "Elixir Loong"){
+        final *= 1.05;
       }
 
       return final;
     }
 
-    // combinations helper (generator)
     function* combinations(arr,k){
       const n=arr.length;
       const indices = Array.from({length:k},(_,i)=>i);
@@ -214,7 +211,6 @@
 
     function randomChoice(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
-    // ---- UI wiring ----
     const piecesDiv = document.getElementById('pieces');
     const out = document.getElementById('out');
     const totalCountEl = document.getElementById('totalCount');
@@ -237,23 +233,33 @@
       out.textContent = title + "\n\n" + text;
     }
 
-    // Rate my team
     document.getElementById('rateBtn').addEventListener('click',()=>{
       const chosen = Object.entries(selection).filter(([k,v])=>v===1).map(([k])=>k);
-      if(chosen.length!==6){ alert('You must pick exactly 6 troops.'); return; }
+      const ruler = document.getElementById('ruler').value;
+      const requiredCount = ruler === "Elixir Loong" ? 7 : 6;
+      if(chosen.length !== requiredCount){
+        alert(`You must pick exactly ${requiredCount} troops for ${ruler}.`);
+        return;
+      }
       const score = scoreGroup(chosen);
       const totalCost = chosen.reduce((s,p)=>s+PIECES[p].cost,0);
       const details = chosen.map(pid=>`${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}`).join('\n');
-      const ruler = document.getElementById('ruler').value;
       showResult(`Team score: ${score.toFixed(2)} (Ruler: ${ruler}, Total cost: ${totalCost})`, details);
     });
 
-    // Generate a good team (search combos randomly within a score window)
+    document.getElementById('genBtn').addEventListener('click',()=>{
+      const res = findRandomStrongGroup(10.0,11.11,400000);
+      if(!res || !res.pick){ alert('No team found (try again).'); return; }
+      const details = res.pick.map(pid=>`${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}`).join('\n');
+      const totalCost = res.pick.reduce((s,p)=>s+PIECES[p].cost,0);
+      const ruler = document.getElementById('ruler').value;
+      showResult(`Team score: ${res.score.toFixed(2)} (Ruler: ${ruler}, Total cost: ${totalCost})`, details);
+    });
+
     function findRandomStrongGroup(minScore=10.0, maxScore=11.11, attempts=200000){
       const combos = [];
       const keys = allIds;
       for(let i=0;i<attempts;i++){
-        // pick 6 random unique
         const pick = [];
         const pool = keys.slice();
         for(let j=0;j<6;j++){
@@ -267,16 +273,6 @@
       return randomChoice(combos);
     }
 
-    document.getElementById('genBtn').addEventListener('click',()=>{
-      const res = findRandomStrongGroup(10.0,11.11,400000);
-      if(!res || !res.pick){ alert('No team found (try again).'); return; }
-      const details = res.pick.map(pid=>`${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}`).join('\n');
-      const totalCost = res.pick.reduce((s,p)=>s+PIECES[p].cost,0);
-      const ruler = document.getElementById('ruler').value;
-      showResult(`Team score: ${res.score.toFixed(2)} (Ruler: ${ruler}, Total cost: ${totalCost})`, details);
-    });
-
-    // Custom Team Finder modal
     const modal = document.getElementById('modal');
     document.getElementById('customBtn').addEventListener('click',()=> modal.style.display='flex');
     document.getElementById('closeModal').addEventListener('click',()=> modal.style.display='none');
@@ -293,11 +289,9 @@
         if(g && c) group_constraints[g.toUpperCase()] = parseInt(c,10);
       });
 
-      // search combos randomly with constraints
-      const attempts = 800000; // should find something without full enumeration in most cases
+      const attempts = 800000;
       const keys = allIds;
       for(let i=0;i<attempts;i++){
-        // make random pick
         const pick = [];
         const pool = keys.slice();
         for(let j=0;j<6;j++){
@@ -305,10 +299,8 @@
           pick.push(pool.splice(idx,1)[0]);
         }
 
-        // check required troops
         if(required_troops.some(rt => !pick.includes(rt))) continue;
 
-        // check group constraints
         let valid = true;
         for(const [g,c] of Object.entries(group_constraints)){
           const members = GROUPS[g] || [];
@@ -317,7 +309,6 @@
         }
         if(!valid) continue;
 
-        // score and compare
         const sc = scoreGroup(pick);
         if(sc >= minScore){
           const totalCost = pick.reduce((s,p)=>s+PIECES[p].cost,0);
@@ -333,7 +324,6 @@
       alert("No team found with these constraints.");
     });
 
-    // Find BEST possible team (full enumeration)
     document.getElementById('bestBtn').addEventListener('click',()=>{
       let bestScore = -Infinity;
       let bestTeam = null;
