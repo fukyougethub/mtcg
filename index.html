@@ -259,10 +259,12 @@
       for(let i=0;i<attempts;i++){
         const pick = [];
         const pool = keys.slice();
-        for(let j=0;j<6;j++){
-          const idx = Math.floor(Math.random()*pool.length);
-          pick.push(pool.splice(idx,1)[0]);
-        }
+const ruler = document.getElementById('ruler').value;
+const pickCount = ruler === "Elixir Loong" ? 7 : 6;
+for(let j=0;j<pickCount;j++){
+  const idx = Math.floor(Math.random()*pool.length);
+  pick.push(pool.splice(idx,1)[0]);
+}
         const sc = scoreGroup(pick);
         if(sc>=minScore && sc<=maxScore) combos.push({score:sc,pick});
       }
@@ -295,7 +297,9 @@
 
       const all = Object.keys(PIECES);
       let best=null;
-      for(const combo of combinations(all,6)){
+const ruler = document.getElementById('ruler').value;
+const pickCount = ruler === "Elixir Loong" ? 7 : 6;
+for(const combo of combinations(all,pickCount)){
         if(reqTroops.some(rt=>!combo.includes(rt))) continue;
         let ok=true;
         for(const [gname,count] of Object.entries(reqGroups)){
@@ -320,7 +324,9 @@
       let bestScore=-1; let bestTeam=null;
       const keys=allIds;
       let count=0;
-      for(const combo of combinations(keys,6)){
+const ruler = document.getElementById('ruler').value;
+const pickCount = ruler === "Elixir Loong" ? 7 : 6;
+for(const combo of combinations(keys,pickCount)){
         const sc=scoreGroup(combo);
         if(sc>bestScore){bestScore=sc;bestTeam=combo;}
         count++;
