@@ -45,6 +45,7 @@
   <select id="modifier">
     <option value="Default">Default</option>
     <option value="Champion Star">Champion Star</option>
+    <option value="Endurance Training">Endurance Training</option>
   </select>
 </div>
 
@@ -100,7 +101,7 @@
     };
 
     const GROUP_RANKINGS = {
-      "NOBLE": 5, "JUGGERNAUT": 5, "CLAN": 3, "RANGER": 2, "GOBLIN": 4, "ASSASSIN": 1,
+      "NOBLE": 5, "JUGGERNAUT": 5, "CLAN": 3, "RANGER": 2, "GOBLIN": 5, "ASSASSIN": 1,
       "BLASTER": 4, "BRAWLER": 1, "AVENGER": 3, "ACE": 5, "UNDEAD": 5, "MAGE": 2,
       "FIRE": 3, "ELECTRIC": 2,
     };
@@ -205,12 +206,41 @@
       }
 
       // --- MODIFIER EFFECTS ---
+// --- MODIFIER EFFECTS ---
 const modifier = document.getElementById('modifier')?.value || "Default";
+
+// Champion Star: +1.05x if at least one 5-cost troop (doesn't stack)
 if(modifier === "Champion Star"){
   const hasFiveCost = chosenIds.some(pid => (PIECES[pid].cost || 0) === 5);
   if(hasFiveCost) final *= 1.05;
 }
 
+// Endurance Training: stacking tank bonus + synergy with BRAWLER/JUGGERNAUT
+else if(modifier === "Endurance Training"){
+  // 1. Each tank troop adds +1.01x (stacks)
+  const tankCount = chosenIds.filter(pid => PIECES[pid].type === "TANK").length;
+  if(tankCount > 0) final *= Math.pow(1.01, tankCount);
+
+  // 2. BRAWLER or JUGGERNAUT trait synergy bonuses
+  const activeGroups = {};
+  for(const [gname, members] of Object.entries(GROUPS)){
+    const active = members.filter(m => chosenSet.has(m)).length;
+    activeGroups[gname] = active;
+  }
+
+  const checkSynergy = (gname) => {
+    const count = activeGroups[gname] || 0;
+    if(count >= 4) return 1.05;
+    if(count >= 2) return 1.025;
+    return 1;
+  };
+
+  const brawlerBonus = checkSynergy("BRAWLER");
+  const juggernautBonus = checkSynergy("JUGGERNAUT");
+  const clanBonus = checkSynergy("JUGGERNAUT");
+
+  final *= brawlerBonus * juggernautBonus * clanBonus;
+}
       return final;
     }
 
