@@ -42,11 +42,12 @@
     <!-- MODIFIER SELECT -->
 <div style="margin-top:10px;">
   <label for="modifier">Select Modifier:</label>
-  <select id="modifier">
-    <option value="Default">Default</option>
-    <option value="Champion Star">Champion Star</option>
-    <option value="Endurance Training">Endurance Training</option>
-  </select>
+<select id="modifier">
+  <option value="Default">Default</option>
+  <option value="Champion Star">Champion Star</option>
+  <option value="Endurance Training">Endurance Training</option>
+  <option value="Fighting Fever">Fighting Fever</option>
+</select>
 </div>
 
     <div class="controls">
@@ -207,39 +208,71 @@
 
       // --- MODIFIER EFFECTS ---
 // --- MODIFIER EFFECTS ---
+// --- MODIFIER EFFECTS ---
 const modifier = document.getElementById('modifier')?.value || "Default";
 
 // Champion Star: +1.05x if at least one 5-cost troop (doesn't stack)
-if(modifier === "Champion Star"){
+if (modifier === "Champion Star") {
   const hasFiveCost = chosenIds.some(pid => (PIECES[pid].cost || 0) === 5);
-  if(hasFiveCost) final *= 1.05;
+  if (hasFiveCost) final *= 1.05;
 }
 
-// Endurance Training: stacking tank bonus + synergy with BRAWLER/JUGGERNAUT
-else if(modifier === "Endurance Training"){
-  // 1. Each tank troop adds +1.01x (stacks)
+// Endurance Training: stacking tank bonus + synergy with BRAWLER, JUGGERNAUT, CLAN
+else if (modifier === "Endurance Training") {
+  // 1️⃣ Each tank troop adds +1.01x (stacks)
   const tankCount = chosenIds.filter(pid => PIECES[pid].type === "TANK").length;
-  if(tankCount > 0) final *= Math.pow(1.01, tankCount);
+  if (tankCount > 0) final *= Math.pow(1.01, tankCount);
 
-  // 2. BRAWLER or JUGGERNAUT trait synergy bonuses
+  // 2️⃣ Trait synergy bonuses
   const activeGroups = {};
-  for(const [gname, members] of Object.entries(GROUPS)){
+  for (const [gname, members] of Object.entries(GROUPS)) {
     const active = members.filter(m => chosenSet.has(m)).length;
     activeGroups[gname] = active;
   }
 
   const checkSynergy = (gname) => {
     const count = activeGroups[gname] || 0;
-    if(count >= 4) return 1.05;
-    if(count >= 2) return 1.025;
+    if (count >= 4) return 1.05;
+    if (count >= 2) return 1.025;
     return 1;
   };
 
   const brawlerBonus = checkSynergy("BRAWLER");
   const juggernautBonus = checkSynergy("JUGGERNAUT");
-  const clanBonus = checkSynergy("JUGGERNAUT");
+  const clanBonus = checkSynergy("CLAN");
 
   final *= brawlerBonus * juggernautBonus * clanBonus;
+}
+
+// Fighting Fever: stacking assassin bonus + synergy with RANGER, CLAN, ACE
+else if (modifier === "Fighting Fever") {
+  // 1️⃣ Each assassin troop adds +1.01x (stacks)
+  const assassinCount = chosenIds.filter(pid => PIECES[pid].type === "ASSASSIN").length;
+  if (assassinCount > 0) final *= Math.pow(1.01, assassinCount);
+
+  // 2️⃣ Trait synergy bonuses (RANGER, CLAN, ACE)
+  const activeGroups = {};
+  for (const [gname, members] of Object.entries(GROUPS)) {
+    const active = members.filter(m => chosenSet.has(m)).length;
+    activeGroups[gname] = active;
+  }
+
+  const checkSynergy = (gname, aceMode = false) => {
+    const count = activeGroups[gname] || 0;
+    if (aceMode) {
+      // ACE only gets the smaller 1.025x bonus once
+      return count >= 2 ? 1.025 : 1;
+    }
+    if (count >= 4) return 1.05;
+    if (count >= 2) return 1.025;
+    return 1;
+  };
+
+  const rangerBonus = checkSynergy("RANGER");
+  const clanBonus = checkSynergy("CLAN");
+  const aceBonus = checkSynergy("ACE", true);
+
+  final *= rangerBonus * clanBonus * aceBonus;
 }
       return final;
     }
