@@ -48,6 +48,7 @@
   <option value="Endurance Training">Endurance Training</option>
   <option value="Fighting Fever">Fighting Fever</option>
     <option value="You're Mine">You're Mine</option>
+    <option value="Last Stand">Last Stand</option>
 </select>
 </div>
 
@@ -241,8 +242,9 @@ else if (modifier === "Endurance Training") {
   const brawlerBonus = checkSynergy("BRAWLER");
   const juggernautBonus = checkSynergy("JUGGERNAUT");
   const clanBonus = checkSynergy("CLAN");
+  const nobleBonus = checkSynergy("NOBLE");
 
-  final *= brawlerBonus * juggernautBonus * clanBonus;
+  final *= brawlerBonus * juggernautBonus * clanBonus * nobleBonus;
 }
 
 // Fighting Fever: stacking assassin bonus + synergy with RANGER, CLAN, ACE
@@ -299,6 +301,42 @@ else if (modifier === "You're Mine") {
     if (ability === 1) final *= 1.01;
     else if (ability === 2) final *= 1.025;
   }
+  // Last Stand: DAMAGE DEALER stacking + ACE, NOBLE, ASSASSIN, AVENGER, BLASTER, FIRE synergy
+else if (modifier === "Last Stand") {
+  // 1️⃣ Each DAMAGE DEALER troop adds +1.01x (stacks)
+  const ddCount = chosenIds.filter(pid => PIECES[pid].type === "DAMAGE DEALER").length;
+  if (ddCount > 0) final *= Math.pow(1.01, ddCount);
+
+  // 2️⃣ Trait synergy bonuses
+  const activeGroups = {};
+  for (const [gname, members] of Object.entries(GROUPS)) {
+    const active = members.filter(m => chosenSet.has(m)).length;
+    activeGroups[gname] = active;
+  }
+
+  // Helper for trait bonuses
+  const checkSynergy = (gname, fireMode = false) => {
+    const count = activeGroups[gname] || 0;
+
+    // FIRE: only gives 1.025x when fully activated (2)
+    if (fireMode) {
+      return count >= 2 ? 1.025 : 1;
+    }
+
+    // All others use the normal 2/4 rule
+    if (count >= 4) return 1.05;
+    if (count >= 2) return 1.025;
+    return 1;
+  };
+
+  const aceBonus = checkSynergy("ACE");
+  const nobleBonus = checkSynergy("NOBLE");
+  const assassinBonus = checkSynergy("ASSASSIN");
+  const avengerBonus = checkSynergy("AVENGER");
+  const blasterBonus = checkSynergy("BLASTER");
+  const fireBonus = checkSynergy("FIRE", true);
+
+  final *= aceBonus * nobleBonus * assassinBonus * avengerBonus * blasterBonus * fireBonus;
 }
       return final;
     }
