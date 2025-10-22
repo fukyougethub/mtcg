@@ -1,309 +1,443 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Comp Generator</title>
-<link rel="icon" href="data:,">
-<style>
-body{font-family:system-ui,Segoe UI,Roboto,Arial;background:#f7f7fb;color:#111;margin:0;padding:20px}
-.container{max-width:1000px;margin:0 auto;background:#fff;border-radius:12px;padding:18px;box-shadow:0 6px 30px rgba(18,24,40,0.06)}
-h1{font-size:18px;margin:0 0 12px}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-label{display:flex;align-items:center;gap:8px;padding:6px;border-radius:6px}
-.controls{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
-button{padding:8px 12px;border-radius:8px;border:0;background:#2563eb;color:white;cursor:pointer}
-button.secondary{background:#6b7280}
-.output{margin-top:12px;padding:10px;background:#f3f4f6;border-radius:8px;white-space:pre-wrap;font-family:monospace}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center}
-.modal .panel{background:white;padding:16px;border-radius:8px;max-width:560px;width:100%}
-.small{font-size:13px;color:#374151}
-input[type=text],input[type=number],select{width:100%;padding:8px;border-radius:6px;border:1px solid #e5e7eb}
-.hint{font-size:12px;color:#6b7280}
-</style>
-</head>
-<body>
-<div class="container">
-<h1>Pick troops for the rating (Trait Dummy adds 1 slot)</h1>
-<div id="pieces" class="grid"></div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Comp Generator</title>
+    <style>
+      body{font-family:system-ui,Segoe UI,Roboto,Arial;background:#f7f7fb;color:#111;margin:0;padding:20px}
+      .container{max-width:1000px;margin:0 auto;background:#fff;border-radius:12px;padding:18px;box-shadow:0 6px 30px rgba(18,24,40,0.06)}
+      h1{font-size:18px;margin:0 0 12px}
+      .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+      label{display:flex;align-items:center;gap:8px;padding:6px;border-radius:6px}
+      .controls{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+      button{padding:8px 12px;border-radius:8px;border:0;background:#2563eb;color:white;cursor:pointer}
+      button.secondary{background:#6b7280}
+      .output{margin-top:12px;padding:10px;background:#f3f4f6;border-radius:8px;white-space:pre-wrap}
+      .modal{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center}
+      .modal .panel{background:white;padding:16px;border-radius:8px;max-width:560px;width:100%}
+      .small{font-size:13px;color:#374151}
+      input[type=text],input[type=number],select{width:100%;padding:8px;border-radius:6px;border:1px solid #e5e7eb}
+      .row{display:flex;gap:8px}
+      .hint{font-size:12px;color:#6b7280}
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Pick 6 troops for the rating: (14.03 is the max points a comp could be)</h1>
+      <div id="pieces" class="grid"></div>
 
-<div style="margin-top:10px;">
-  <label for="ruler">Select Ruler:</label>
-  <select id="ruler">
-    <option>Royale King</option>
-    <option>Spirit Empress</option>
-    <option>Goblin Queen</option>
-    <option>Elixir Loong</option>
-  </select>
-</div>
+      <!-- RULER SELECT (required, no 'no ruler' option) -->
+      <div style="margin-top:10px;">
+        <label for="ruler">Select Ruler:</label>
+        <select id="ruler">
+          <option value="Royale King">Royale King</option>
+          <option value="Spirit Empress">Spirit Empress</option>
+          <option value="Goblin Queen">Goblin Queen</option>
+          <!-- ✅ Added new ruler -->
+          <option value="Elixir Loong">Elixir Loong</option>
+        </select>
+      </div>
 
-<div style="margin-top:10px;">
-  <label for="modifier">Select Modifier:</label>
-  <select id="modifier">
-    <option value="Default">Default</option>
-    <option value="Champion Star">Champion Star</option>
-    <option value="Endurance Training">Endurance Training</option>
-    <option value="Fighting Fever">Fighting Fever</option>
-    <option value="You're Mine">You're Mine / Echo Bench / Ascension</option>
-    <option value="Last Stand">Last Stand</option>
-    <option value="Trait Dummy">Trait Dummy (forced extra slot + dummy)</option>
-  </select>
-</div>
+      <!-- MODIFIER SELECT -->
+      <div style="margin-top:10px;">
+        <label for="modifier">Select Modifier:</label>
+        <select id="modifier">
+          <option value="Default">Default</option>
+          <option value="Champion Star">Champion Star</option>
+          <option value="Endurance Training">Endurance Training</option>
+          <option value="Fighting Fever">Fighting Fever</option>
+          <option value="You're Mine">You're Mine/Echo Bench/Ascension/</option>
+          <option value="Last Stand">Last Stand</option>
+        </select>
+      </div>
 
-<div id="traitDummySettings" style="display:none; margin-top:10px;">
-  <label for="dummyGroup1">Trait Dummy - Group 1:</label>
-  <select id="dummyGroup1"></select>
-  <label for="dummyGroup2" style="margin-top:6px;">Trait Dummy - Group 2:</label>
-  <select id="dummyGroup2"></select>
-  <div class="hint">When Trait Dummy is active we auto-add a TANK dummy with these two trait values and increase team capacity by +1 (dummy occupies that extra slot).</div>
-</div>
+      <div class="controls">
+        <button id="rateBtn">Rate my team</button>
+        <button id="genBtn">Generate a good team</button>
+        <button id="customBtn" class="secondary">Custom Team Finder</button>
+        <button id="bestBtn" class="secondary">Find BEST possible team</button>
+        <div style="margin-left:auto" class="hint">Total pieces: <span id="totalCount"></span></div>
+      </div>
 
-<div class="controls">
-  <button id="rateBtn">Rate my team</button>
-  <button id="genBtn">Generate a good team</button>
-  <button id="customBtn" class="secondary">Custom Team Finder</button>
-  <button id="bestBtn" class="secondary">Find BEST possible team</button>
-  <div style="margin-left:auto" class="hint">Pickable pieces: <span id="pickLimit">6</span> (shows +1 if Trait Dummy)</div>
-</div>
-
-<div id="out" class="output">Results will appear here.</div>
-</div>
-
-<div id="modal" class="modal" style="display:none">
-  <div class="panel">
-    <h3>Custom Team Options</h3>
-    <label class="small">Minimum Score:</label>
-    <input id="minScore" type="number" step="0.1" value="10.0" />
-    <label class="small" style="margin-top:8px">Required Troops (comma separated):</label>
-    <input id="reqTroops" type="text" placeholder="e.g. PRINCE, WIZARD" />
-    <label class="small" style="margin-top:8px">Required Groups (format: GROUP:count, comma separated):</label>
-    <input id="reqGroups" type="text" placeholder="e.g. NOBLE:2, UNDEAD:1" />
-    <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
-      <button id="findCustom">Find Team</button>
-      <button id="closeModal" class="secondary">Close</button>
+      <div id="out" class="output">Results will appear here.</div>
     </div>
-  </div>
-</div>
 
-<script>
-/**************************************************************
-* Full-featured Comp Generator
-* - Trait Dummy forced if selected
-* - Stage-based cumulative scoring
-* - Ruler and modifier effects
-* - Random, best, and custom team generation
-**************************************************************/
+    <!-- custom modal -->
+    <div id="modal" class="modal" style="display:none">
+      <div class="panel">
+        <h3>Custom Team Options</h3>
+        <label class="small">Minimum Score:</label>
+        <input id="minScore" type="number" step="0.1" value="10.0" />
+        <label class="small" style="margin-top:8px">Required Troops (comma separated):</label>
+        <input id="reqTroops" type="text" placeholder="e.g. PRINCE, WIZARD" />
+        <label class="small" style="margin-top:8px">Required Groups (format: GROUP:count, comma separated):</label>
+        <input id="reqGroups" type="text" placeholder="e.g. NOBLE:2, UNDEAD:1" />
+        <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
+          <button id="findCustom">Find Team</button>
+          <button id="closeModal" class="secondary">Close</button>
+        </div>
+      </div>
+    </div>
 
-// DOM refs
-const piecesDiv = document.getElementById('pieces');
-const modifierSelect = document.getElementById('modifier');
-const traitDummySettings = document.getElementById('traitDummySettings');
-const dummyGroup1 = document.getElementById('dummyGroup1');
-const dummyGroup2 = document.getElementById('dummyGroup2');
-const pickLimitEl = document.getElementById('pickLimit');
-const out = document.getElementById('out');
-const modal = document.getElementById('modal');
-
-// Base data
-const GROUPS = {
-  "NOBLE":["KNIGHT","PRINCE","PRINCESS","GOLDEN KNIGHT","MUSKETEER"],
-  "JUGGERNAUT":["KNIGHT","VALKYRIE","GOBLIN MACHINE","SKELETON KING"],
-  "CLAN":["ARCHER","BARBARIAN","VALKYRIE","ARCHER QUEEN"],
-  "RANGER":["ARCHER","DART GOBLIN","PRINCESS","SKELETON DRAGONS"],
-  "GOBLIN":["GOBLINS","SPEAR GOBLINS","DART GOBLIN","GOBLIN MACHINE"],
-  "ASSASSIN":["GOBLINS","ROYAL GHOST","GOLDEN KNIGHT","BANDIT"],
-  "BLASTER":["SPEAR GOBLINS","BABY DRAGON","EXECUTIONER","MUSKETEER"],
-  "BRAWLER":["BARBARIAN","PRINCE","GIANT SKELETON","MEGA KNIGHT"],
-  "AVENGER":["PEKKA","ELECTRO GIANT","ARCHER QUEEN","WITCH"],
-  "ACE":["PEKKA","EXECUTIONER","MEGA KNIGHT","BANDIT"],
-  "UNDEAD":["WITCH","GIANT SKELETON","ROYAL GHOST","SKELETON KING","SKELETON DRAGONS"],
-  "MAGE":["WIZARD","ELECTRO WIZARD"],
-  "FIRE":["WIZARD","BABY DRAGON"],
-  "ELECTRIC":["ELECTRO GIANT","ELECTRO WIZARD"]
-};
-
-const GROUP_RANKINGS = {
-"NOBLE":5,"JUGGERNAUT":5,"CLAN":3,"RANGER":2,"GOBLIN":5,"ASSASSIN":1,
-"BLASTER":4,"BRAWLER":1,"AVENGER":3,"ACE":5,"UNDEAD":5,"MAGE":2,"FIRE":3,"ELECTRIC":2
-};
-
-function getBonusMultiplier(b){if(b===1)return 0.95;if(b===2)return 0.98;if(b===3)return 1.0;if(b===4)return 1.03;if(b===5)return 1.05;return 1.0;}
-function getGroupMultiplier(name){return GROUP_RANKINGS[name]||1;}
-
-// Pieces data
-const PIECES = {
-"KNIGHT":{"type":"TANK","group1":"NOBLE","group2":"JUGGERNAUT","bonus":1,"cost":2,"abilityamount":0},
-"PRINCE":{"type":"TANK","group1":"NOBLE","group2":"BRAWLER","bonus":3,"cost":3,"abilityamount":1},
-"PRINCESS":{"type":"ARTILLERY","group1":"NOBLE","group2":"RANGER","bonus":4,"cost":4,"abilityamount":0},
-"GOLDEN KNIGHT":{"type":"ASSASSIN","group1":"NOBLE","group2":"ASSASSIN","bonus":5,"cost":5,"abilityamount":1},
-"PEKKA":{"type":"DAMAGE DEALER","group1":"AVENGER","group2":"ACE","bonus":3,"cost":3,"abilityamount":0},
-"GOBLIN MACHINE":{"type":"CONTROLLER","group1":"JUGGERNAUT","group2":"GOBLIN","bonus":4,"cost":4,"abilityamount":2},
-"SKELETON KING":{"type":"DAMAGE DEALER","group1":"JUGGERNAUT","group2":"UNDEAD","bonus":4,"cost":5,"abilityamount":1},
-"ARCHER":{"type":"MARKSMEN","group1":"CLAN","group2":"RANGER","bonus":3,"cost":2,"abilityamount":0},
-"BARBARIAN":{"type":"CONTROLLER","group1":"CLAN","group2":"BRAWLER","bonus":2,"cost":2,"abilityamount":0},
-"VALKYRIE":{"type":"TANK","group1":"CLAN","group2":"JUGGERNAUT","bonus":3,"cost":3,"abilityamount":0},
-"ARCHER QUEEN":{"type":"MARKSMEN","group1":"CLAN","group2":"AVENGER","bonus":5,"cost":5,"abilityamount":2},
-"DART GOBLIN":{"type":"MARKSMEN","group1":"GOBLIN","group2":"RANGER","bonus":2,"cost":3,"abilityamount":0},
-"GOBLINS":{"type":"ASSASSIN","group1":"GOBLIN","group2":"ASSASSIN","bonus":2,"cost":2,"abilityamount":0},
-"SPEAR GOBLINS":{"type":"DAMAGE DEALER","group1":"GOBLIN","group2":"BLASTER","bonus":1,"cost":2,"abilityamount":0},
-"ROYAL GHOST":{"type":"ASSASSIN","group1":"ASSASSIN","group2":"UNDEAD","bonus":5,"cost":4,"abilityamount":1},
-"WIZARD":{"type":"ARTILLERY","group1":"FIRE","group2":"MAGE","bonus":3,"cost":2,"abilityamount":0},
-"EXECUTIONER":{"type":"ARTILLERY","group1":"BLASTER","group2":"ACE","bonus":3,"cost":3,"abilityamount":0},
-"GIANT SKELETON":{"type":"DAMAGE DEALER","group1":"BRAWLER","group2":"UNDEAD","bonus":4,"cost":3,"abilityamount":2},
-"MEGA KNIGHT":{"type":"TANK","group1":"BRAWLER","group2":"ACE","bonus":4,"cost":4,"abilityamount":2},
-"BANDIT":{"type":"ASSASSIN","group1":"ASSASSIN","group2":"ACE","bonus":4,"cost":4,"abilityamount":1},
-"SKELETON DRAGONS":{"type":"CONTROLLER","group1":"UNDEAD","group2":"RANGER","bonus":2,"cost":2,"abilityamount":1},
-"ELECTRO GIANT":{"type":"TANK","group1":"ELECTRIC","group2":"AVENGER","bonus":3,"cost":3,"abilityamount":2},
-"MUSKETEER":{"type":"MARKSMEN","group1":"NOBLE","group2":"BLASTER","bonus":3,"cost":3,"abilityamount":1},
-"BABY DRAGON":{"type":"DAMAGE DEALER","group1":"FIRE","group2":"BLASTER","bonus":4,"cost":4,"abilityamount":0},
-"ELECTRO WIZARD":{"type":"CONTROLLER","group1":"MAGE","group2":"ELECTRIC","bonus":5,"cost":4,"abilityamount":2},
-"WITCH":{"type":"CONTROLLER","group1":"UNDEAD","group2":"AVENGER","bonus":3,"cost":4,"abilityamount":2}
-};
-
-// UI setup
-const selection = {};
-const allIds = Object.keys(PIECES);
-allIds.forEach(pid=>{
-  const lbl=document.createElement('label');
-  const cb=document.createElement('input'); cb.type='checkbox';
-  cb.addEventListener('change',()=>selection[pid]=cb.checked?1:0);
-  selection[pid]=0;
-  const span=document.createElement('span'); span.textContent=pid;
-  lbl.appendChild(cb); lbl.appendChild(span);
-  piecesDiv.appendChild(lbl);
-});
-
-// populate dummy dropdowns
-Object.keys(GROUPS).forEach(g=>{
-  const o1=document.createElement('option'); o1.value=g; o1.textContent=g;
-  const o2=o1.cloneNode(true);
-  dummyGroup1.appendChild(o1);
-  dummyGroup2.appendChild(o2);
-});
-
-// pick limit
-const basePickLimit = 6;
-pickLimitEl.textContent = basePickLimit;
-modifierSelect.addEventListener('change',()=>{
-  const isDummy = modifierSelect.value==='Trait Dummy';
-  traitDummySettings.style.display = isDummy?'block':'none';
-  pickLimitEl.textContent = isDummy?(basePickLimit+1):basePickLimit;
-});
-
-// scoring helper
-function stagePointsForGroup(count,size){
-  let pts=0;
-  if(size>=5){if(count>=2) pts++; if(count>=3) pts++; if(count>=4) pts++;}
-  else if(size===4){if(count>=2) pts++; if(count>=3) pts++; if(count>=4) pts++;}
-  else if(size===3){if(count>=1) pts++; if(count>=2) pts++; if(count>=3) pts++;}
-  else if(size===2){if(count>=1) pts++; if(count>=2) pts++;}
-  return pts;
-}
-
-function scoreGroup(chosenIds){
-  const chosen=chosenIds.slice();
-  const chosenSet=new Set(chosen);
-  let dummyAdded=false;
-  const modifierValue=modifierSelect.value;
-  if(modifierValue==="Trait Dummy"){
-    const g1=dummyGroup1.value;
-    const g2=dummyGroup2.value;
-    const dummyPiece={type:"TANK",group1:g1,group2:g2,bonus:3,cost:0,abilityamount:0};
-    PIECES["_DUMMY_"]=dummyPiece;
-    chosen.push("_DUMMY_"); dummyAdded=true;
-  }
-  const groupCounts={};
-  for(const g of Object.keys(GROUPS)) groupCounts[g]=0;
-  for(const pid of chosen){
-    const p=PIECES[pid]; if(!p) continue;
-    if(p.group1) groupCounts[p.group1]=(groupCounts[p.group1]||0)+1;
-    if(p.group2) groupCounts[p.group2]=(groupCounts[p.group2]||0)+1;
-  }
-  let score=0;
-  for(const [gname,members] of Object.entries(GROUPS)){
-    const count=groupCounts[gname]||0;
-    const pts=stagePointsForGroup(count,members.length);
-    score+=pts*getGroupMultiplier(gname);
-  }
-  const chosenTypes=new Set(chosen.map(p=>PIECES[p]&&PIECES[p].type).filter(Boolean));
-  if(chosenTypes.size>1) score+=chosenTypes.size/2;
-  let bonusMultiplier=1;
-  for(const pid of chosen){const p=PIECES[pid]; if(p&&typeof p.bonus!=='undefined') bonusMultiplier*=getBonusMultiplier(p.bonus);}
-  let flatBonusPoints=0;
-  for(const pid of chosen){const p=PIECES[pid]; if(p&&p.bonusPoints) flatBonusPoints+=p.bonusPoints;}
-  const totalCost=chosen.reduce((s,p)=>(s+((PIECES[p]&&PIECES[p].cost)||0)),0);
-  let final=score*bonusMultiplier+flatBonusPoints;
-  const ruler=document.getElementById('ruler').value;
-  if(ruler==="Royale King") final*=1.1;
-  else if(ruler==="Spirit Empress"){if(totalCost>20) final*=1.2;}
-  else if(ruler==="Goblin Queen"){
-    const hasGoblin=chosenSet.has("GOBLINS"),hasSpear=chosenSet.has("SPEAR GOBLINS"),
-    hasDart=chosenSet.has("DART GOBLIN"),hasMachine=chosenSet.has("GOBLIN MACHINE");
-    if(hasGoblin&&hasSpear&&hasDart&&hasMachine) final*=1.5;
-    else if((hasGoblin&&hasSpear)||(hasDart&&hasSpear)||(hasDart&&hasGoblin)||(hasDart&&hasSpear&&hasGoblin)) final*=1.25;
-  } else if(ruler==="Elixir Loong") final*=1.05;
-  // modifier effects simplified
-  if(dummyAdded&&PIECES['_DUMMY_']) delete PIECES['_DUMMY_'];
-  return {final,detail:{groupCounts,totalCost}};
-}
-
-// safe run
-function safeRun(fn){try{return fn();}catch(err){console.error(err);out.textContent="Error occurred; see console.";}}
-
-// random choice
-function pickRandomTeam(limit){
-  const keys=Object.keys(PIECES); const team=[];
-  const shuffled=keys.sort(()=>Math.random()-0.5);
-  for(const k of shuffled){if(team.length>=limit) break; team.push(k);}
-  return team;
-}
-
-// events
-document.getElementById('rateBtn').addEventListener('click',()=>{
-  const chosen=Object.entries(selection).filter(([k,v])=>v).map(([k,v])=>k);
-  const res=safeRun(()=>scoreGroup(chosen));
-  out.textContent="Score: "+res.final.toFixed(2)+"\nDetails:\n"+JSON.stringify(res.detail,null,2);
-});
-
-document.getElementById('genBtn').addEventListener('click',()=>{
-  const limit=parseInt(pickLimitEl.textContent);
-  const team=pickRandomTeam(limit);
-  const res=safeRun(()=>scoreGroup(team));
-  out.textContent="Generated Team: "+team.join(", ")+"\nScore: "+res.final.toFixed(2);
-});
-
-// custom modal
-document.getElementById('customBtn').addEventListener('click',()=>modal.style.display='flex');
-document.getElementById('closeModal').addEventListener('click',()=>modal.style.display='none');
-document.getElementById('findCustom').addEventListener('click',()=>{
-  const minScore=parseFloat(document.getElementById('minScore').value)||0;
-  const reqTroops=document.getElementById('reqTroops').value.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
-  const reqGroupsInput=document.getElementById('reqGroups').value.split(',').map(s=>s.trim().toUpperCase());
-  const reqGroups={};
-  reqGroupsInput.forEach(s=>{
-    const parts=s.split(':'); if(parts.length===2) reqGroups[parts[0]]=parseInt(parts[1]);
-  });
-  // brute-force search simplified
-  const limit=parseInt(pickLimitEl.textContent);
-  const allKeys=Object.keys(PIECES);
-  const team=[];
-  for(const k of allKeys){
-    if(team.length>=limit) break;
-    if(reqTroops.includes(k)) team.push(k);
-  }
-  const res=safeRun(()=>scoreGroup(team));
-  if(res.final>=minScore) out.textContent="Custom Team Found: "+team.join(", ")+"\nScore: "+res.final.toFixed(2);
-  else out.textContent="No team meets the criteria.";
-  modal.style.display='none';
-});
-
-// find best possible
-document.getElementById('bestBtn').addEventListener('click',()=>{
-  const limit=parseInt(pickLimitEl.textContent);
-  const team=pickRandomTeam(limit).sort((a,b)=>((PIECES[b].bonus||1)-(PIECES[a].bonus||1)));
-  const res=safeRun(()=>scoreGroup(team));
-  out.textContent="Best team (randomized sort by bonus): "+team.join(", ")+"\nScore: "+res.final.toFixed(2);
-});
-</script>
-</body>
+    <script>
+      // ---- Data ----
+      const TYPES = ["TANK", "ASSASSIN", "DAMAGE DEALER", "CONTROLLER", "MARKSMEN", "ARTILLERY"];
+      const GROUPS = {
+        "NOBLE": ["KNIGHT", "PRINCE", "PRINCESS", "GOLDEN KNIGHT", "MUSKETEER"],
+        "JUGGERNAUT": ["KNIGHT", "VALKYRIE", "GOBLIN MACHINE", "SKELETON KING"],
+        "CLAN": ["ARCHER", "BARBARIAN", "VALKYRIE", "ARCHER QUEEN"],
+        "RANGER": ["ARCHER", "DART GOBLIN", "PRINCESS", "SKELETON DRAGONS"],
+        "GOBLIN": ["GOBLINS", "SPEAR GOBLINS", "DART GOBLIN", "GOBLIN MACHINE"],
+        "ASSASSIN": ["GOBLINS", "ROYAL GHOST", "GOLDEN KNIGHT", "BANDIT"],
+        "BLASTER": ["SPEAR GOBLINS", "BABY DRAGON", "EXECUTIONER", "MUSKETEER"],
+        "BRAWLER": ["BARBARIAN", "PRINCE", "GIANT SKELETON", "MEGA KNIGHT"],
+        "AVENGER": ["PEKKA", "ELECTRO GIANT", "ARCHER QUEEN", "WITCH"],
+        "ACE": ["PEKKA", "EXECUTIONER", "MEGA KNIGHT", "BANDIT"],
+        "UNDEAD": ["WITCH", "GIANT SKELETON", "ROYAL GHOST", "SKELETON KING", "SKELETON DRAGONS"],
+        "MAGE": ["WIZARD", "ELECTRO WIZARD"],
+        "FIRE": ["WIZARD", "BABY DRAGON"],
+        "ELECTRIC": ["ELECTRO GIANT", "ELECTRO WIZARD"],
+      };
+      const GROUP_RANKINGS = {
+        "NOBLE": 5,
+        "JUGGERNAUT": 5,
+        "CLAN": 3,
+        "RANGER": 2,
+        "GOBLIN": 5,
+        "ASSASSIN": 1,
+        "BLASTER": 4,
+        "BRAWLER": 1,
+        "AVENGER": 3,
+        "ACE": 5,
+        "UNDEAD": 5,
+        "MAGE": 2,
+        "FIRE": 3,
+        "ELECTRIC": 2,
+      };
+      function getBonusMultiplier(b){
+        if(b===1) return 0.95;
+        if(b===2) return 0.98;
+        if(b===3) return 1.0;
+        if(b===4) return 1.03;
+        if(b===5) return 1.05;
+        return 1.0;
+      }
+      const PIECES = {
+        "KNIGHT": {"type":"TANK","group1":"NOBLE","group2":"JUGGERNAUT","bonus":1,"cost":2,"abilityamount":0},
+        "PRINCE": {"type":"TANK","group1":"NOBLE","group2":"BRAWLER","bonus":3,"cost":3,"abilityamount":1},
+        "PRINCESS": {"type":"ARTILLERY","group1":"NOBLE","group2":"RANGER","bonus":4,"cost":4,"abilityamount":0},
+        "GOLDEN KNIGHT": {"type":"ASSASSIN","group1":"NOBLE","group2":"ASSASSIN","bonus":5,"cost":5,"abilityamount":1},
+        "PEKKA": {"type":"DAMAGE DEALER","group1":"AVENGER","group2":"ACE","bonus":3,"cost":3,"abilityamount":0},
+        "GOBLIN MACHINE": {"type":"CONTROLLER","group1":"JUGGERNAUT","group2":"GOBLIN","bonus":4,"cost":4,"abilityamount":2},
+        "SKELETON KING": {"type":"DAMAGE DEALER","group1":"JUGGERNAUT","group2":"UNDEAD","bonus":4,"cost":5,"abilityamount":1},
+        "ARCHER": {"type":"MARKSMEN","group1":"CLAN","group2":"RANGER","bonus":3,"cost":2,"abilityamount":0},
+        "BARBARIAN": {"type":"CONTROLLER","group1":"CLAN","group2":"BRAWLER","bonus":2,"cost":2,"abilityamount":0},
+        "VALKYRIE": {"type":"TANK","group1":"CLAN","group2":"JUGGERNAUT","bonus":3,"cost":3,"abilityamount":0},
+        "ARCHER QUEEN": {"type":"MARKSMEN","group1":"CLAN","group2":"AVENGER","bonus":5,"cost":5,"abilityamount":2},
+        "DART GOBLIN": {"type":"MARKSMEN","group1":"GOBLIN","group2":"RANGER","bonus":2,"cost":3,"abilityamount":0},
+        "GOBLINS": {"type":"ASSASSIN","group1":"GOBLIN","group2":"ASSASSIN","bonus":2,"cost":2,"abilityamount":0},
+        "SPEAR GOBLINS": {"type":"DAMAGE DEALER","group1":"GOBLIN","group2":"BLASTER","bonus":1,"cost":2,"abilityamount":0},
+        "ROYAL GHOST": {"type":"ASSASSIN","group1":"ASSASSIN","group2":"UNDEAD","bonus":5,"cost":4,"abilityamount":1},
+        "WIZARD": {"type":"ARTILLERY","group1":"FIRE","group2":"MAGE","bonus":3,"cost":2,"abilityamount":0},
+        "EXECUTIONER": {"type":"ARTILLERY","group1":"BLASTER","group2":"ACE","bonus":3,"cost":3,"abilityamount":0},
+        "GIANT SKELETON": {"type":"DAMAGE DEALER","group1":"BRAWLER","group2":"UNDEAD","bonus":4,"cost":3,"abilityamount":2},
+        "MEGA KNIGHT": {"type":"TANK","group1":"BRAWLER","group2":"ACE","bonus":4,"cost":4,"abilityamount":2},
+        "BANDIT": {"type":"ASSASSIN","group1":"ASSASSIN","group2":"ACE","bonus":4,"cost":4,"abilityamount":1},
+        "SKELETON DRAGONS": {"type":"CONTROLLER","group1":"UNDEAD","group2":"RANGER","bonus":2,"cost":2,"abilityamount":1},
+        "ELECTRO GIANT": {"type":"TANK","group1":"ELECTRIC","group2":"AVENGER","bonus":3,"cost":3,"abilityamount":2},
+        "MUSKETEER": {"type":"MARKSMEN","group1":"NOBLE","group2":"BLASTER","bonus":3,"cost":3,"abilityamount":1},
+        "BABY DRAGON": {"type":"DAMAGE DEALER","group1":"FIRE","group2":"BLASTER","bonus":4,"cost":4,"abilityamount":0},
+        "ELECTRO WIZARD": {"type":"CONTROLLER","group1":"MAGE","group2":"ELECTRIC","bonus":5,"cost":4,"abilityamount":2},
+        "WITCH": {"type":"CONTROLLER","group1":"UNDEAD","group2":"AVENGER","bonus":3,"cost":4,"abilityamount":2},
+      };
+      function getGroupMultiplier(g){
+        const rank = GROUP_RANKINGS[g] ?? 2;
+        if(rank===1) return 0.8;
+        if(rank===2) return 0.9;
+        if(rank===3) return 1.0;
+        if(rank===4) return 1.125;
+        if(rank===5) return 1.25;
+        return 1.0;
+      }
+      function scoreGroup(chosenIds){
+        const chosenSet = new Set(chosenIds);
+        let score = 0;
+        for(const [gname,members] of Object.entries(GROUPS)){
+          const active = members.filter(m=>chosenSet.has(m)).length;
+          const multiplier = getGroupMultiplier(gname);
+          if(members.length===3){
+            if(active===3) score += 2 * multiplier;
+          } else if(members.length===4){
+            if(active>=2) score += 1 * multiplier;
+            if(active===4) score += 2 * multiplier;
+          } else if(members.length===2){
+            if(active>=2) score += 1.5 * multiplier;
+          } else if(members.length===5){
+            if(active>=2) score += 1 * multiplier;
+            if(active===4) score += 2 * multiplier;
+          }
+        }
+        const chosenTypes = new Set(chosenIds.map(p => PIECES[p].type));
+        if(chosenTypes.size > 1) score += chosenTypes.size / 2;
+        let bonusMultiplier = 1;
+        for(const pid of chosenIds){
+          bonusMultiplier *= getBonusMultiplier(PIECES[pid].bonus);
+        }
+        const totalCost = chosenIds.reduce((s,p)=>s + (PIECES[p].cost||0), 0);
+        let final = score * bonusMultiplier;
+        const ruler = document.getElementById('ruler').value;
+        if(ruler === "Royale King"){
+          final *= 1.1;
+        } else if(ruler === "Spirit Empress"){
+          if(totalCost > 20) final *= 1.2;
+        } else if(ruler === "Goblin Queen"){
+          const hasGoblin = chosenSet.has("GOBLINS");
+          const hasSpear = chosenSet.has("SPEAR GOBLINS");
+          const hasDart = chosenSet.has("DART GOBLIN");
+          const hasMachine = chosenSet.has("GOBLIN MACHINE");
+          if(hasGoblin && hasSpear && hasDart && hasMachine){
+            final *= 1.5;
+          } else if( (hasGoblin && hasSpear) || (hasDart && hasSpear) || (hasDart && hasGoblin) || (hasDart && hasSpear && hasGoblin) ){
+            final *= 1.25;
+          }
+        }
+        // ✅ New Elixir Loong rule
+        else if(ruler === "Elixir Loong"){
+          final *= 1.05;
+        }
+        // --- MODIFIER EFFECTS ---
+        // --- MODIFIER EFFECTS ---
+        // --- MODIFIER EFFECTS ---
+        const modifier = document.getElementById('modifier')?.value || "Default";
+        // Champion Star: +1.05x if at least one 5-cost troop (doesn't stack)
+        if (modifier === "Champion Star") {
+          const hasFiveCost = chosenIds.some(pid => (PIECES[pid].cost || 0) === 5);
+          if (hasFiveCost) final *= 1.05;
+        }
+        // Endurance Training: stacking tank bonus + synergy with BRAWLER, JUGGERNAUT, CLAN
+        else if (modifier === "Endurance Training") {
+          // 1️⃣ Each tank troop adds +1.01x (stacks)
+          const tankCount = chosenIds.filter(pid => PIECES[pid].type === "TANK").length;
+          if (tankCount > 0) final *= Math.pow(1.01, tankCount);
+          // 2️⃣ Trait synergy bonuses
+          const activeGroups = {};
+          for (const [gname, members] of Object.entries(GROUPS)) {
+            const active = members.filter(m => chosenSet.has(m)).length;
+            activeGroups[gname] = active;
+          }
+          const checkSynergy = (gname) => {
+            const count = activeGroups[gname] || 0;
+            if (count >= 4) return 1.05;
+            if (count >= 2) return 1.025;
+            return 1;
+          };
+          const brawlerBonus = checkSynergy("BRAWLER");
+          const juggernautBonus = checkSynergy("JUGGERNAUT");
+          const clanBonus = checkSynergy("CLAN");
+          const nobleBonus = checkSynergy("NOBLE");
+          final *= brawlerBonus * juggernautBonus * clanBonus * nobleBonus;
+        }
+        // Fighting Fever: stacking assassin bonus + synergy with RANGER, CLAN, ACE
+        else if (modifier === "Fighting Fever") {
+          // 1️⃣ Each assassin troop adds +1.01x (stacks)
+          const assassinCount = chosenIds.filter(pid => PIECES[pid].type === "ASSASSIN").length;
+          if (assassinCount > 0) final *= Math.pow(1.01, assassinCount);
+          // 2️⃣ Trait synergy bonuses (RANGER, CLAN, ACE)
+          const activeGroups = {};
+          for (const [gname, members] of Object.entries(GROUPS)) {
+            const active = members.filter(m => chosenSet.has(m)).length;
+            activeGroups[gname] = active;
+          }
+          const checkSynergy = (gname, aceMode = false) => {
+            const count = activeGroups[gname] || 0;
+            if (aceMode) { // ACE only gets the smaller 1.025x bonus once
+              return count >= 2 ? 1.025 : 1;
+            }
+            if (count >= 4) return 1.05;
+            if (count >= 2) return 1.025;
+            return 1;
+          };
+          const rangerBonus = checkSynergy("RANGER");
+          const clanBonus = checkSynergy("CLAN");
+          const aceBonus = checkSynergy("ACE", true);
+          final *= rangerBonus * clanBonus * aceBonus;
+        }
+        // You're Mine: scaling by cost + abilityamount
+        else if (modifier === "You're Mine") {
+          // Cost-based multipliers
+          const costMult = {
+            2: 1.0, // no bonus
+            3: 1.005, // +0.5%
+            4: 1.01, // +1%
+            5: 1.025 // +2.5%
+          };
+          for (const pid of chosenIds) {
+            const cost = PIECES[pid].cost || 0;
+            const ability = PIECES[pid].abilityamount || 0;
+            // Apply cost-based multiplier
+            if (cost >= 2 && cost <= 5) {
+              final *= costMult[cost];
+            }
+            // Apply abilityamount multiplier (stacking)
+            if (ability === 1) final *= 1.01;
+            else if (ability === 2) final *= 1.025;
+          }
+        }
+        // Last Stand: DAMAGE DEALER stacking + ACE, NOBLE, ASSASSIN, AVENGER, BLASTER, FIRE synergy
+        else if (modifier === "Last Stand") {
+          // 1️⃣ Each DAMAGE DEALER troop adds +1.01x (stacks)
+          const ddCount = chosenIds.filter(pid => PIECES[pid].type === "DAMAGE DEALER").length;
+          if (ddCount > 0) final *= Math.pow(1.01, ddCount);
+          // 2️⃣ Trait synergy bonuses
+          const activeGroups = {};
+          for (const [gname, members] of Object.entries(GROUPS)) {
+            const active = members.filter(m => chosenSet.has(m)).length;
+            activeGroups[gname] = active;
+          }
+          // Helper for trait bonuses
+          const checkSynergy = (gname, fireMode = false) => {
+            const count = activeGroups[gname] || 0;
+            // FIRE: only gives 1.025x when fully activated (2)
+            if (fireMode) {
+              return count >= 2 ? 1.025 : 1;
+            }
+            // All others use the normal 2/4 rule
+            if (count >= 4) return 1.05;
+            if (count >= 2) return 1.025;
+            return 1;
+          };
+          const aceBonus = checkSynergy("ACE");
+          const nobleBonus = checkSynergy("NOBLE");
+          const assassinBonus = checkSynergy("ASSASSIN");
+          const avengerBonus = checkSynergy("AVENGER");
+          const blasterBonus = checkSynergy("BLASTER");
+          const fireBonus = checkSynergy("FIRE", true);
+          final *= aceBonus * nobleBonus * assassinBonus * avengerBonus * blasterBonus * fireBonus;
+        }
+        return final;
+      }
+      function* combinations(arr,k){
+        const n=arr.length;
+        const indices = Array.from({length:k},(_,i)=>i);
+        if(k>n) return;
+        while(true){
+          yield indices.map(i=>arr[i]);
+          let i=k-1;
+          while(i>=0 && indices[i]===i+n-k) i--;
+          if(i<0) return;
+          indices[i]++;
+          for(let j=i+1;j<k;j++) indices[j]=indices[j-1]+1;
+        }
+      }
+      function randomChoice(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+      const piecesDiv = document.getElementById('pieces');
+      const out = document.getElementById('out');
+      const totalCountEl = document.getElementById('totalCount');
+      const allIds = Object.keys(PIECES);
+      totalCountEl.textContent = allIds.length;
+      const selection = {};
+      allIds.forEach(pid=>{
+        const div = document.createElement('label');
+        const cb = document.createElement('input');
+        cb.type='checkbox';
+        cb.addEventListener('change',()=> selection[pid]=cb.checked ? 1 : 0);
+        selection[pid]=0;
+        const txt = document.createElement('span');
+        txt.textContent = pid;
+        div.appendChild(cb);
+        div.appendChild(txt);
+        piecesDiv.appendChild(div);
+      });
+      function showResult(title,text){ out.textContent = title + "\n\n" + text; }
+      // ✅ Adjusted for Elixir Loong team size
+      document.getElementById('rateBtn').addEventListener('click',()=>{
+        const chosen = Object.entries(selection).filter(([k,v])=>v===1).map(([k])=>k);
+        const ruler = document.getElementById('ruler').value;
+        const requiredCount = ruler === "Elixir Loong" ? 7 : 6;
+        if(chosen.length !== requiredCount){
+          alert(You must pick exactly ${requiredCount} troops for ${ruler}.);
+          return;
+        }
+        const score = scoreGroup(chosen);
+        const totalCost = chosen.reduce((s,p)=>s+PIECES[p].cost,0);
+        const details = chosen.map(pid=>${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}).join('\n');
+        const modifier = document.getElementById('modifier').value;
+        showResult(Team score: ${score.toFixed(2)} (Ruler: ${ruler}, Modifier: ${modifier}, Total cost: ${totalCost}), details);
+      });
+      // everything else unchanged ↓
+      function findRandomStrongGroup(minScore=10.0, maxScore=11.11, attempts=200000){
+        const combos = [];
+        const keys = allIds;
+        for(let i=0;i<attempts;i++){
+          const pick = [];
+          const pool = keys.slice();
+          const ruler = document.getElementById('ruler').value;
+          const pickCount = ruler === "Elixir Loong" ? 7 : 6;
+          for(let j=0;j<pickCount;j++){
+            const idx = Math.floor(Math.random()*pool.length);
+            pick.push(pool.splice(idx,1)[0]);
+          }
+          const sc = scoreGroup(pick);
+          if(sc>=minScore && sc<=maxScore) combos.push({score:sc,pick});
+        }
+        if(combos.length===0) return [null,null];
+        return randomChoice(combos);
+      }
+      document.getElementById('genBtn').addEventListener('click',()=>{
+        const res = findRandomStrongGroup(10.0,11.11,400000);
+        if(!res || !res.pick){ alert('No strong team found'); return; }
+        const {pick,score} = res;
+        const totalCost = pick.reduce((s,p)=>s+PIECES[p].cost,0);
+        const details = pick.map(pid=>${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}).join('\n');
+        showResult(Random good team (Score: ${score.toFixed(2)}, Cost: ${totalCost}), details);
+      });
+      const modal = document.getElementById('modal');
+      document.getElementById('customBtn').addEventListener('click',()=> modal.style.display='flex');
+      document.getElementById('closeModal').addEventListener('click',()=> modal.style.display='none');
+      document.getElementById('findCustom').addEventListener('click',()=>{
+        const minScore = parseFloat(document.getElementById('minScore').value)||10.0;
+        const reqTroops = document.getElementById('reqTroops').value.toUpperCase().split(',').map(x=>x.trim()).filter(x=>x);
+        const reqGroupsRaw = document.getElementById('reqGroups').value.toUpperCase().split(',').map(x=>x.trim()).filter(x=>x);
+        const reqGroups = {};
+        for(const g of reqGroupsRaw){ const [gname,count] = g.split(':'); reqGroups[gname]=parseInt(count||1); }
+        const all = Object.keys(PIECES);
+        let best=null;
+        const ruler = document.getElementById('ruler').value;
+        const pickCount = ruler === "Elixir Loong" ? 7 : 6;
+        for(const combo of combinations(all,pickCount)){
+          if(reqTroops.some(rt=>!combo.includes(rt))) continue;
+          let ok=true;
+          for(const [gname,count] of Object.entries(reqGroups)){
+            let present=0;
+            for(const pid of combo){ const {group1,group2}=PIECES[pid]; if(group1===gname||group2===gname) present++; }
+            if(present<count){ok=false;break;}
+          }
+          if(!ok) continue;
+          const sc = scoreGroup(combo);
+          if(sc>=minScore){ best={combo,sc}; break; }
+        }
+        if(!best){ showResult('No team found matching conditions','Try lowering requirements.'); return; }
+        const totalCost = best.combo.reduce((s,p)=>s+PIECES[p].cost,0);
+        const details = best.combo.map(pid=>${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}).join('\n');
+        showResult(Custom search found team (Score: ${best.sc.toFixed(2)}, Cost: ${totalCost}), details);
+      });
+      document.getElementById('bestBtn').addEventListener('click',()=>{
+        let bestScore=-1;
+        let bestTeam=null;
+        const keys=allIds;
+        let count=0;
+        const ruler = document.getElementById('ruler').value;
+        const pickCount = ruler === "Elixir Loong" ? 7 : 6;
+        for(const combo of combinations(keys,pickCount)){
+          const sc=scoreGroup(combo);
+          if(sc>bestScore){bestScore=sc;bestTeam=combo;}
+          count++;
+        }
+        const totalCost = bestTeam.reduce((s,p)=>s+PIECES[p].cost,0);
+        const details = bestTeam.map(pid=>${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}).join('\n');
+        showResult(Best of ${count} combos\nScore: ${bestScore.toFixed(2)} (Cost: ${totalCost}), details);
+      });
+    </script>
+  </body>
 </html>
