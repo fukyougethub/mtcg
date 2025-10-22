@@ -361,83 +361,107 @@
         }
         const score = scoreGroup(chosen);
         const totalCost = chosen.reduce((s,p)=>s+PIECES[p].cost,0);
-        const details = chosen.map(pid=>${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}).join('\n');
-        const modifier = document.getElementById('modifier').value;
-        showResult(Team score: ${score.toFixed(2)} (Ruler: ${ruler}, Modifier: ${modifier}, Total cost: ${totalCost}), details);
-      });
-      // everything else unchanged ↓
-      function findRandomStrongGroup(minScore=10.0, maxScore=11.11, attempts=200000){
-        const combos = [];
-        const keys = allIds;
-        for(let i=0;i<attempts;i++){
-          const pick = [];
-          const pool = keys.slice();
-          const ruler = document.getElementById('ruler').value;
-          const pickCount = ruler === "Elixir Loong" ? 7 : 6;
-          for(let j=0;j<pickCount;j++){
-            const idx = Math.floor(Math.random()*pool.length);
-            pick.push(pool.splice(idx,1)[0]);
-          }
-          const sc = scoreGroup(pick);
-          if(sc>=minScore && sc<=maxScore) combos.push({score:sc,pick});
-        }
-        if(combos.length===0) return [null,null];
-        return randomChoice(combos);
+const details = chosen
+  .map(pid => `${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}`)
+  .join('\n');
+const modifier = document.getElementById('modifier').value;
+showResult(`Team score: ${score.toFixed(2)} (Ruler: ${ruler}, Modifier: ${modifier}, Total cost: ${totalCost})`, details);
+
+// everything else unchanged ↓
+function findRandomStrongGroup(minScore = 10.0, maxScore = 11.11, attempts = 200000) {
+  const combos = [];
+  const keys = allIds;
+  for (let i = 0; i < attempts; i++) {
+    const pick = [];
+    const pool = keys.slice();
+    const ruler = document.getElementById('ruler').value;
+    const pickCount = ruler === "Elixir Loong" ? 7 : 6;
+    for (let j = 0; j < pickCount; j++) {
+      const idx = Math.floor(Math.random() * pool.length);
+      pick.push(pool.splice(idx, 1)[0]);
+    }
+    const sc = scoreGroup(pick);
+    if (sc >= minScore && sc <= maxScore) combos.push({ score: sc, pick });
+  }
+  if (combos.length === 0) return [null, null];
+  return randomChoice(combos);
+}
+
+document.getElementById('genBtn').addEventListener('click', () => {
+  const res = findRandomStrongGroup(10.0, 11.11, 400000);
+  if (!res || !res.pick) {
+    alert('No strong team found');
+    return;
+  }
+  const { pick, score } = res;
+  const totalCost = pick.reduce((s, p) => s + PIECES[p].cost, 0);
+  const details = pick
+    .map(pid => `${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}`)
+    .join('\n');
+  showResult(`Random good team (Score: ${score.toFixed(2)}, Cost: ${totalCost})`, details);
+});
+
+const modal = document.getElementById('modal');
+document.getElementById('customBtn').addEventListener('click', () => modal.style.display = 'flex');
+document.getElementById('closeModal').addEventListener('click', () => modal.style.display = 'none');
+
+document.getElementById('findCustom').addEventListener('click', () => {
+  const minScore = parseFloat(document.getElementById('minScore').value) || 10.0;
+  const reqTroops = document.getElementById('reqTroops').value.toUpperCase().split(',').map(x => x.trim()).filter(x => x);
+  const reqGroupsRaw = document.getElementById('reqGroups').value.toUpperCase().split(',').map(x => x.trim()).filter(x => x);
+  const reqGroups = {};
+  for (const g of reqGroupsRaw) {
+    const [gname, count] = g.split(':');
+    reqGroups[gname] = parseInt(count || 1);
+  }
+  const all = Object.keys(PIECES);
+  let best = null;
+  const ruler = document.getElementById('ruler').value;
+  const pickCount = ruler === "Elixir Loong" ? 7 : 6;
+  for (const combo of combinations(all, pickCount)) {
+    if (reqTroops.some(rt => !combo.includes(rt))) continue;
+    let ok = true;
+    for (const [gname, count] of Object.entries(reqGroups)) {
+      let present = 0;
+      for (const pid of combo) {
+        const { group1, group2 } = PIECES[pid];
+        if (group1 === gname || group2 === gname) present++;
       }
-      document.getElementById('genBtn').addEventListener('click',()=>{
-        const res = findRandomStrongGroup(10.0,11.11,400000);
-        if(!res || !res.pick){ alert('No strong team found'); return; }
-        const {pick,score} = res;
-        const totalCost = pick.reduce((s,p)=>s+PIECES[p].cost,0);
-        const details = pick.map(pid=>${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}).join('\n');
-        showResult(Random good team (Score: ${score.toFixed(2)}, Cost: ${totalCost}), details);
-      });
-      const modal = document.getElementById('modal');
-      document.getElementById('customBtn').addEventListener('click',()=> modal.style.display='flex');
-      document.getElementById('closeModal').addEventListener('click',()=> modal.style.display='none');
-      document.getElementById('findCustom').addEventListener('click',()=>{
-        const minScore = parseFloat(document.getElementById('minScore').value)||10.0;
-        const reqTroops = document.getElementById('reqTroops').value.toUpperCase().split(',').map(x=>x.trim()).filter(x=>x);
-        const reqGroupsRaw = document.getElementById('reqGroups').value.toUpperCase().split(',').map(x=>x.trim()).filter(x=>x);
-        const reqGroups = {};
-        for(const g of reqGroupsRaw){ const [gname,count] = g.split(':'); reqGroups[gname]=parseInt(count||1); }
-        const all = Object.keys(PIECES);
-        let best=null;
-        const ruler = document.getElementById('ruler').value;
-        const pickCount = ruler === "Elixir Loong" ? 7 : 6;
-        for(const combo of combinations(all,pickCount)){
-          if(reqTroops.some(rt=>!combo.includes(rt))) continue;
-          let ok=true;
-          for(const [gname,count] of Object.entries(reqGroups)){
-            let present=0;
-            for(const pid of combo){ const {group1,group2}=PIECES[pid]; if(group1===gname||group2===gname) present++; }
-            if(present<count){ok=false;break;}
-          }
-          if(!ok) continue;
-          const sc = scoreGroup(combo);
-          if(sc>=minScore){ best={combo,sc}; break; }
-        }
-        if(!best){ showResult('No team found matching conditions','Try lowering requirements.'); return; }
-        const totalCost = best.combo.reduce((s,p)=>s+PIECES[p].cost,0);
-        const details = best.combo.map(pid=>${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}).join('\n');
-        showResult(Custom search found team (Score: ${best.sc.toFixed(2)}, Cost: ${totalCost}), details);
-      });
-      document.getElementById('bestBtn').addEventListener('click',()=>{
-        let bestScore=-1;
-        let bestTeam=null;
-        const keys=allIds;
-        let count=0;
-        const ruler = document.getElementById('ruler').value;
-        const pickCount = ruler === "Elixir Loong" ? 7 : 6;
-        for(const combo of combinations(keys,pickCount)){
-          const sc=scoreGroup(combo);
-          if(sc>bestScore){bestScore=sc;bestTeam=combo;}
-          count++;
-        }
-        const totalCost = bestTeam.reduce((s,p)=>s+PIECES[p].cost,0);
-        const details = bestTeam.map(pid=>${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}).join('\n');
-        showResult(Best of ${count} combos\nScore: ${bestScore.toFixed(2)} (Cost: ${totalCost}), details);
-      });
+      if (present < count) { ok = false; break; }
+    }
+    if (!ok) continue;
+    const sc = scoreGroup(combo);
+    if (sc >= minScore) { best = { combo, sc }; break; }
+  }
+  if (!best) {
+    showResult('No team found matching conditions', 'Try lowering requirements.');
+    return;
+  }
+  const totalCost = best.combo.reduce((s, p) => s + PIECES[p].cost, 0);
+  const details = best.combo
+    .map(pid => `${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}`)
+    .join('\n');
+  showResult(`Custom search found team (Score: ${best.sc.toFixed(2)}, Cost: ${totalCost})`, details);
+});
+
+document.getElementById('bestBtn').addEventListener('click', () => {
+  let bestScore = -1;
+  let bestTeam = null;
+  const keys = allIds;
+  let count = 0;
+  const ruler = document.getElementById('ruler').value;
+  const pickCount = ruler === "Elixir Loong" ? 7 : 6;
+  for (const combo of combinations(keys, pickCount)) {
+    const sc = scoreGroup(combo);
+    if (sc > bestScore) { bestScore = sc; bestTeam = combo; }
+    count++;
+  }
+  const totalCost = bestTeam.reduce((s, p) => s + PIECES[p].cost, 0);
+  const details = bestTeam
+    .map(pid => `${pid}: type=${PIECES[pid].type} Groups=(${PIECES[pid].group1}, ${PIECES[pid].group2}) Bonus=${PIECES[pid].bonus} Cost=${PIECES[pid].cost}`)
+    .join('\n');
+  showResult(`Best of ${count} combos\nScore: ${bestScore.toFixed(2)} (Cost: ${totalCost})`, details);
+});
     </script>
   </body>
 </html>
