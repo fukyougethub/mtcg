@@ -356,7 +356,7 @@
         const ruler = document.getElementById('ruler').value;
         const requiredCount = ruler === "Elixir Loong" ? 7 : 6;
         if(chosen.length !== requiredCount){
-          alert(You must pick exactly ${requiredCount} troops for ${ruler}.);
+          alert(`You must pick exactly ${requiredCount} troops for ${ruler}.`);
           return;
         }
         const score = scoreGroup(chosen);
