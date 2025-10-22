@@ -49,8 +49,25 @@
   <option value="Fighting Fever">Fighting Fever</option>
     <option value="You're Mine">You're Mine/Echo Bench/Ascension/</option>
     <option value="Last Stand">Last Stand</option>
+  <option value="Trait Dummy">Trait Dummy</option>
 </select>
 </div>
+
+    const modifierSelect = document.getElementById('modifier');
+const traitDummySettings = document.getElementById('traitDummySettings');
+
+modifierSelect.addEventListener('change', () => {
+  traitDummySettings.style.display = modifierSelect.value === "Trait Dummy" ? "block" : "none";
+});
+
+
+    <div id="traitDummySettings" style="display:none; margin-top:10px;">
+  <label for="dummyGroup1">Trait for the dummy:</label>
+  <select id="dummyGroup1"></select>
+
+  <label for="dummyGroup2" style="margin-top:6px;">Trait 2 for the dummy:</label>
+  <select id="dummyGroup2"></select>
+    </div>
 
     <div class="controls">
       <button id="rateBtn">Rate my team</button>
@@ -103,6 +120,18 @@
       "ELECTRIC": ["ELECTRO GIANT", "ELECTRO WIZARD"],
     };
 
+    const groupNames = Object.keys(GROUPS);
+const dummy1 = document.getElementById('dummyGroup1');
+const dummy2 = document.getElementById('dummyGroup2');
+groupNames.forEach(g => {
+  const opt1 = document.createElement('option');
+  const opt2 = document.createElement('option');
+  opt1.value = opt2.value = g;
+  opt1.textContent = opt2.textContent = g;
+  dummy1.appendChild(opt1);
+  dummy2.appendChild(opt2);
+});
+
     const GROUP_RANKINGS = {
       "NOBLE": 5, "JUGGERNAUT": 5, "CLAN": 3, "RANGER": 2, "GOBLIN": 5, "ASSASSIN": 1,
       "BLASTER": 4, "BRAWLER": 1, "AVENGER": 3, "ACE": 5, "UNDEAD": 5, "MAGE": 2,
@@ -153,6 +182,27 @@ const PIECES = {
     function scoreGroup(chosenIds){
       const chosenSet = new Set(chosenIds);
       let score = 0;
+
+      // Add Trait Dummy logic
+const modifier = document.getElementById('modifier')?.value || "Default";
+if (modifier === "Trait Dummy") {
+  const g1 = document.getElementById('dummyGroup1').value;
+  const g2 = document.getElementById('dummyGroup2').value;
+
+  // Create a dummy TANK piece with no cost or bonus
+  const dummyPiece = {
+    type: "TANK",
+    group1: g1,
+    group2: g2,
+    bonus: 0,
+    cost: 0,
+    abilityamount: 0
+  };
+
+  // Add to the synergy logic by pushing into the list
+  PIECES["_DUMMY_"] = dummyPiece;
+  chosenIds.push("_DUMMY_");
+}
 
       for(const [gname,members] of Object.entries(GROUPS)){
         const active = members.filter(m=>chosenSet.has(m)).length;
@@ -339,6 +389,9 @@ else if (modifier === "Last Stand") {
 
   final *= aceBonus * nobleBonus * assassinBonus * avengerBonus * blasterBonus * fireBonus;
 }
+      // Cleanup the temporary dummy piece if used
+if (PIECES["_DUMMY_"]) delete PIECES["_DUMMY_"];
+
       return final;
     }
 
