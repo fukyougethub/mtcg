@@ -272,26 +272,25 @@
     const chosenSet = new Set(chosen);
 
     // Add dummy if modifier selected — dummy always auto-included
-    const modifierValue = modifierSelect.value || 'Default';
-    let dummyAdded = false;
-    if (modifierValue === 'Trait Dummy') {
-      const g1 = dummyGroup1.value || Object.keys(GROUPS)[0];
-      const g2 = dummyGroup2.value || Object.keys(GROUPS)[0];
-      const dummy = {
-        type: 'TANK',
-        group1: g1,
-        group2: g2,
-        bonus: 2,           // influences bonus multiplier (kept moderate)
-        cost: 1,            // contributes to total cost
-        abilityamount: 0,
-        bonusPoints: 0.5    // extra flat point contribution (you can tune)
-      };
-      // attach temporarily
-      PIECES['_DUMMY_'] = dummy;
-      chosen.push('_DUMMY_');
-      chosenSet.add('_DUMMY_');
-      dummyAdded = true;
-    }
+let dummyAdded = false;
+const modifierValue = document.getElementById('modifier').value;
+if (modifierValue === "Trait Dummy") {
+  const g1 = document.getElementById('dummyGroup1').value;
+  const g2 = document.getElementById('dummyGroup2').value;
+
+  const dummyPiece = {
+    type: "TANK",
+    group1: g1,
+    group2: g2,
+    bonus: 3,
+    cost: 0,
+    abilityamount: 0
+  };
+
+  PIECES["_DUMMY_"] = dummyPiece;
+  chosenIds.push("_DUMMY_"); // ✅ actually add dummy to the team
+  dummyAdded = true;
+}
 
     // Count group activations
     const groupCounts = {};
@@ -440,12 +439,16 @@
     // show details: chosen pieces + dummy if any
     const isDummyActive = modifierSelect.value === 'Trait Dummy';
     const dummyInfo = isDummyActive ? `\n\nDUMMY: groups=(${dummyGroup1.value}, ${dummyGroup2.value})` : '';
-    const details = chosen.map(pid => {
-      const p = PIECES[pid];
-      return `${pid}: type=${p.type} groups=(${p.group1},${p.group2}) bonus=${p.bonus} cost=${p.cost}`;
-    }).join('\n');
-    showResult(`Team score: ${finalScore.toFixed(3)} (Ruler: ${document.getElementById('ruler').value}, Modifier: ${modifierSelect.value})`,
-      `${details}${dummyInfo}\n\nGroup counts: ${JSON.stringify(res.detail.groupCounts, null, 2)}`);
+const details = chosen.map(pid => {
+  if(pid === "_DUMMY_") {
+    const d = PIECES["_DUMMY_"];
+    return `TRAIT DUMMY: type=${d.type} Groups=(${d.group1}, ${d.group2}) Bonus=${d.bonus} Cost=${d.cost}`;
+  }
+  const p = PIECES[pid];
+  return `${pid}: type=${p.type} Groups=(${p.group1}, ${p.group2}) Bonus=${p.bonus} Cost=${p.cost}`;
+}).join('\n');
+
+showResult(`Team score: ${score.toFixed(2)} (Ruler: ${ruler}, Modifier: ${modifier}, Total cost: ${totalCost})`, details);
   }));
 
   // Find random strong (used by Generate)
